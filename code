@@ -1,0 +1,64 @@
+#include <LPC214x.H> 
+void ADC0_Init(void);
+unsigned int ADC0_Read(void);
+int main(void) 
+{
+ 
+ 
+ IO1DIR &= (0 << 16) & (0 << 17) & (0 << 18); 
+ IO0DIR = (1 << 5) | (1 << 6);
+ 
+ ADC0_Init();
+ 
+ while (1)
+ {
+ if (!(IO1PIN & (1 << 16))) // Clockwise key pressed
+ {
+ IO0PIN = 0X00000040 ;
+ }
+ if (!(IO1PIN & (1 << 18))) // OFF key pressed
+ {
+ IO0PIN = 0X00000060 ;
+ }
+ if (!(IO1PIN & (1 << 17))) // Counterclockwise key pressed
+ {
+ IO0PIN = 0X00000020 ;
+ }
+ 
+ ;
+ }
+}
+void ADC0_Init(void)
+{
+ /*Initialize ADC AD0.0*/
+ AD0CR = 1<<21; //A/D is Operational
+ AD0CR = 0<<21; //A/D is in Power Down Mode
+ PCONP = (PCONP &0x001817BE) | (1UL<<12);
+ PINSEL0 = 0x00;
+ PINSEL1 = 0x00400000; //P0.27 is Configured as Analog to 
+Digital Converter Pin AD0.0
+ 
+ AD0CR = 0x00200401; //CLKDIV=4,Channel-0.0 
+Selected,A/D is Operational
+ /*
+ A/D Clock = PCLK /(CLKDIV+1);
+ */
+ /**********************************************/
+}
+unsigned int ADC0_Read(void)
+{
+ unsigned long adc_data;
+ 
+ AD0CR |= 1UL<<24; //Start Conversion
+ do
+ {
+ adc_data = AD0GDR;
+ }while(!(adc_data & 0x80000000));
+ //Wait untill the DONE bits Sets
+ AD0CR &= ~0x01000000; //Stops the A/D Conversion 
+ 
+ adc_data = adc_data >> 6;
+ adc_data = adc_data & 0x3FF; //Clearing all other Bits
+return (adc_data);
+}
+
